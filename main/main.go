@@ -1,8 +1,8 @@
 package main
 
 import (
-	"enumutil/utils/io"
 	"fmt"
+	"github.com/amit-upadhyay-it/goutils/io"
 	"log"
 	"strings"
 )
