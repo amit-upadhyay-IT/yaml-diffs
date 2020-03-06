@@ -7,34 +7,6 @@ import (
 	"strings"
 )
 
-/*
- TODO:
-- mention line number also while showing diff
-- handle cases where configs can be like:
-	plugins:
-  - jekyll-avatar
-  - jekyll-feed
-  - jekyll-mentions
-  - jekyll-redirect-from
-  - jekyll-seo-tag
-  - jekyll-sitemap
-  - jemoji
-- handle cases where configs can be like:
-defaults:
-  -
-    scope:
-      path: "_docs"
-      type: "docs"
-    values:
-      layout: "docs"
-  -
-    scope:
-      path: "_posts"
-      type: "posts"
-    values:
-      layout: "news_item"
-      image: /img/twitter-card.png
- */
 func main() {
 
 	file1Path := "files/config1.yml"
