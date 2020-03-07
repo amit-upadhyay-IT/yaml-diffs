@@ -16,6 +16,7 @@ func GetMapFromYAML(lines []string, rootName string) map[string]interface{} {
 	// forming-up the map after pre-processing
 	var result map[string]interface{} = make(map[string]interface{})
 	FormUpMapFromYAML(fileLines, result, rootName)
+	RefactorMap(result, rootName)
 	return result
 }
 
@@ -127,4 +128,89 @@ func getOffset(lines []string) int {
 	return index
 }
 
+// iterate over map of maps,
+// when encountered that key is beginning with `- `, collect the keys in a list and change the reference of the parentKey to the collected list
+/*
+algorithm:
+* In the map each key can contain a value as a map or as a primitive
+* if key contains a map:
+	* if key has the prefix `- `:
+		* read the value map of the above key
+		* if the value in the value map are not null/empty:
+			* create an object of that key-value pair and append it to a list (eg: named listValues)
+		* else if value in the value map is empty then:
+			* simply append the keyName in the above list (eg: named listValues)
+	* else if key doesn't have prefix:
+		* do nothing
+* else if key contains a value:
+	* do nothing
+ */
+func RefactorMap(result map[string]interface{}, parentKey string) {
+	data, ok := result[parentKey].(map[string]interface{})
+	if ok {  // map is found
+		listConcatenationRequired := false
+		keysInData := getKeysFromMap(data)
+		if keysInData != nil && len(keysInData) > 0 && strings.HasPrefix(keysInData[0], "- ") {
+			assertionOnKeySymantic(keysInData)  // an assertion to verify if yaml file is having correct syntax, if one key has prefix `- ` then all the keys under that node should have that prefix
+			listConcatenationRequired = true
+		}
+		listOfMapOrPrimitives := make([]interface{}, 0)
+		if listConcatenationRequired {
+			// create a separate map with each key value pair in data map
+			// append it to a list
+			for key, val := range data {
+				if strings.HasPrefix(key, "- ") {
+					key = strings.TrimLeft(key, "- ")
+				}
+				if val == nil || val == "" {
+					listOfMapOrPrimitives = append(listOfMapOrPrimitives, key)
+				} else {
+					mapToAppend := make(map[string]interface{})
+					mapToAppend[key] = val
+					listOfMapOrPrimitives = append(listOfMapOrPrimitives, mapToAppend)
+				}
+			}
+			result[parentKey] = listOfMapOrPrimitives
+			for _, item := range listOfMapOrPrimitives {
+				if node, ok := item.(map[string]interface{}); ok {
+					RefactorMap(node, getOneKeyNameFromMap(node))
+				}
+			}
+			// run a loop for the values present in result[parentKey] and call method recursively on each item in listOfMapOrPrimitives
+		} else {
+			// iterate through the map and recursively call for each node
+			for key, _ := range data {
+				RefactorMap(data, key)
+			}
+		}
+		//RefactorMap(data, parentKey)
+	} else {
+		// child node is found
 
+	}
+}
+
+func assertionOnKeySymantic(data []string) {
+	for _, item := range data {
+		if !strings.HasPrefix(item, "- ") {
+			log.Fatal("The key in the yaml file seem to have problem, not all key are array")
+		}
+	}
+}
+
+func getKeysFromMap(dic map[string]interface{}) []string {
+	res := make([]string, 0)
+	for k, _ := range dic {
+		res = append(res, k)
+	}
+	return res
+}
+
+func getOneKeyNameFromMap(dic map[string]interface{}) string {
+	res := ""
+	for key, _ := range dic {
+		res = key
+		break
+	}
+	return res
+}
